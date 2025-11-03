@@ -29,9 +29,9 @@ resource site 'Microsoft.Web/sites@2022-09-01' = {
     httpsOnly: true
   }
   tags: {
-    'project': 'iva-calculadora'
-    'provisionedBy': 'bicep'
+    project: 'iva-calculadora'
+    provisionedBy: 'bicep'
   }
 }
 
-output webAppUrl string = 'https://' + site.name + '.azurewebsites.net'
+output webAppUrl string = 'https://${site.name}.azurewebsites.net'
