@@ -1,63 +1,73 @@
 trigger:
-  branches:
-    include:
-      - main
+- main   # o la rama que uses
 
 variables:
-  environment: 'dev'
-  azureServiceConnection: 'sc-iva-dev'     # Cambia al nombre real de tu Service Connection
-  resourceGroup: 'rg-iva-dev'
+  vmImageName: 'ubuntu-latest'
+  azureServiceConnection: 'sc-iva-dev'
+  resourceGroupName: 'rg-iva-dev'
   location: 'eastus'
   appServicePlanName: 'asp-iva-dev'
   webAppName: 'app-iva-dev'
-  skuName: 'F1'
 
 stages:
+# -------------------------
+# 1. Stage de infraestructura
+# -------------------------
 - stage: Infra
-  displayName: 'Deploy infrastructure (Bicep)'
+  displayName: 'Provisionar infraestructura (Bicep)'
   jobs:
   - job: DeployInfra
+    displayName: 'Deploy main.bicep'
     pool:
-      vmImage: 'ubuntu-latest'
+      vmImage: $(vmImageName)
+
     steps:
-    - checkout: self
-
     - task: AzureCLI@2
-      displayName: 'Create RG & Deploy Bicep'
+      displayName: 'Crear RG y desplegar Bicep'
       inputs:
-        azureSubscription: '$(azureServiceConnection)'
-        scriptType: 'bash'
-        scriptLocation: 'inlineScript'
+        azureSubscription: $(azureServiceConnection)
+        scriptType: bash
+        scriptLocation: inlineScript
         inlineScript: |
-          set -e
-          az group create --name "$(resourceGroup)" --location "$(location)"
-          az deployment group create             --resource-group "$(resourceGroup)"             --template-file "infra/main.bicep"             --parameters "@infra/parameters.$(environment).json"             --parameters appServicePlanName="$(appServicePlanName)" webAppName="$(webAppName)" location="$(location)" skuName="$(skuName)"
+          echo "Creando resource group si no existe..."
+          az group create \
+            --name $(resourceGroupName) \
+            --location $(location)
 
+          echo "Desplegando plantilla Bicep..."
+          az deployment group create \
+            --resource-group $(resourceGroupName) \
+            --template-file infra/main.bicep \
+            --parameters \
+              location=$(location) \
+              appServicePlanName=$(appServicePlanName) \
+              webAppName=$(webAppName)
+
+# -------------------------
+# 2. Stage de aplicación
+# -------------------------
 - stage: App
-  displayName: 'Deploy app content (ZIP)'
+  displayName: 'Deploy app IVA'
   dependsOn: Infra
   jobs:
   - job: DeployApp
+    displayName: 'Publicar web.zip en Azure Web App'
     pool:
-      vmImage: 'ubuntu-latest'
-    steps:
-    - checkout: self
+      vmImage: $(vmImageName)
 
+    steps:
     - task: ArchiveFiles@2
-      displayName: 'Archive web content'
+      displayName: 'Empaquetar carpeta /web en ZIP'
       inputs:
-        rootFolderOrFile: '$(Build.SourcesDirectory)/web'
+        rootFolderOrFile: '$(System.DefaultWorkingDirectory)/web'
         includeRootFolder: false
         archiveType: 'zip'
-        archiveFile: '$(Build.ArtifactStagingDirectory)/site.zip'
+        archiveFile: '$(Build.ArtifactStagingDirectory)/web.zip'
         replaceExistingArchive: true
 
-    - task: AzureCLI@2
-      displayName: 'Zip Deploy to Web App'
+    - task: AzureWebApp@1
+      displayName: 'Deploy a Azure Web App'
       inputs:
-        azureSubscription: '$(azureServiceConnection)'
-        scriptType: 'bash'
-        scriptLocation: 'inlineScript'
-        inlineScript: |
-          set -e
-          az webapp deployment source config-zip             --resource-group "$(resourceGroup)"             --name "$(webAppName)"             --src "$(Build.ArtifactStagingDirectory)/site.zip"
+        azureSubscription: $(azureServiceConnection)
+        appName: $(webAppName)
+        package: '$(Build.ArtifactStagingDirectory)/web.zip'
