@@ -8,8 +8,8 @@ variables:
   azureServiceConnection: 'sc-iva-dev'     # Cambia al nombre real de tu Service Connection
   resourceGroup: 'rg-iva-dev'
   location: 'eastus'
-  appServicePlanName: 'asp-iva-$(environment)'
-  webAppName: 'app-iva-$(environment)'
+  appServicePlanName: 'asp-iva-dev'
+  webAppName: 'app-iva-dev'
   skuName: 'F1'
 
 stages:
