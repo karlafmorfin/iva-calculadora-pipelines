@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Calculadora de IVA</title>
+  <meta name="description" content="Calcula IVA: ingresa monto y tasa para obtener IVA y total." />
+  <style>
+    body { font-family: system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif; max-width: 680px; margin: 40px auto; padding: 0 16px; }
+    h1 { margin-bottom: 0.25rem; }
+    p { color: #555; }
+    label { display:block; margin-top: 16px; }
+    input { width: 100%; padding: 10px; font-size: 16px; }
+    button { margin-top: 16px; padding: 10px 16px; font-size: 16px; cursor: pointer; }
+    .card { margin-top: 20px; padding: 16px; border: 1px solid #ddd; border-radius: 8px; }
+    .row { display:flex; justify-content: space-between; margin: 6px 0; }
+    .small { font-size: 12px; color:#666; }
+    footer { margin-top: 32px; font-size: 12px; color:#666; }
+  </style>
+</head>
+<body>
+  <h1>Calculadora de IVA</h1>
+  <p class="small">Tasa por defecto 16% (MX). Redondeo a 2 decimales.</p>
+
+  <label for="monto">Monto (sin IVA)</label>
+  <input id="monto" type="number" min="0" step="0.01" placeholder="Ej. 1000.00" inputmode="decimal" />
+
+  <label for="tasa">Tasa de IVA (%)</label>
+  <input id="tasa" type="number" min="0" step="0.01" value="16" />
+
+  <button id="calcular">Calcular</button>
+
+  <div id="resultado" class="card" aria-live="polite" hidden>
+    <div class="row"><strong>Base:</strong><span id="baseOut"></span></div>
+    <div class="row"><strong>IVA:</strong><span id="ivaOut"></span></div>
+    <div class="row"><strong>Total:</strong><span id="totalOut"></span></div>
+    <p class="small">Nota: las reglas fiscales reales pueden requerir redondeos o tratamientos específicos.</p>
+  </div>
+
+  <script>
+    const toMoney = n => n.toLocaleString('es-MX', { style: 'currency', currency: 'MXN' });
+    document.getElementById('calcular').addEventListener('click', () => {
+      const base = parseFloat(document.getElementById('monto').value);
+      const tasa = parseFloat(document.getElementById('tasa').value);
+      if (isNaN(base) || isNaN(tasa) || base < 0 || tasa < 0) {
+        alert('Revisa los valores: usa números válidos y positivos.');
+        return;
+      }
+      const iva = Math.round((base * (tasa / 100)) * 100) / 100;
+      const total = Math.round((base + iva) * 100) / 100;
+
+      document.getElementById('baseOut').textContent  = toMoney(base);
+      document.getElementById('ivaOut').textContent   = toMoney(iva);
+      document.getElementById('totalOut').textContent = toMoney(total);
+      document.getElementById('resultado').hidden = false;
+    });
+  </script>
+
+  <footer>
+    <p>Hecho con ❤️ y automatizado con Azure Pipelines.</p>
+  </footer>
+</body>
+</html>
